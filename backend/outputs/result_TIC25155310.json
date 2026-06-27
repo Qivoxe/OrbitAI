@@ -1,5 +1,6 @@
 {
   "tic_id": 25155310,
+  "name": "PlanetX",
   "classification": "PLANET CANDIDATE",
   "confidence": 39.49,
   "probabilities": {
@@ -31,5 +32,5 @@
     "flag": "SLIGHTLY_SHORT",
     "interpretation": "Shorter than expected \u2014 high impact parameter"
   },
-  "figure_url": "/outputs/orbitai_TIC25155310.png"
+  "figure_url": "/outputs/planetx_TIC25155310.png"
 }

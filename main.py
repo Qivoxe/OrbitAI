@@ -28,7 +28,8 @@ def run_pipeline(tic_id: int, save_outputs=True):
 
     try:
         lc = search_and_download(tic_id)
-        if lc is None: return None
+        if lc is None:
+            return None
         time, flux, flux_err = extract_arrays(lc)
     except Exception as e:
         logger.error(f"Download failed: {e}")
@@ -53,49 +54,73 @@ def run_pipeline(tic_id: int, save_outputs=True):
         classification = {"label": "UNKNOWN", "confidence": 0.0, "probabilities": {}}
 
     try:
-        refined_period, period_err = refine_period(cleaned["time"], cleaned["flux"], bls_result["period"])
-        depth_result               = measure_depth(cleaned["time"], cleaned["flux"], refined_period,
-                                                   bls_result["transit_time"], bls_result["duration"])
-        duration_val               = validate_duration(depth_result["duration_hrs"], refined_period)
+        refined_period, period_err = refine_period(
+            cleaned["time"], cleaned["flux"], bls_result["period"]
+        )
+        depth_result = measure_depth(
+            cleaned["time"], cleaned["flux"],
+            refined_period,
+            bls_result["transit_time"],
+            bls_result["duration"]
+        )
+        duration_val = validate_duration(depth_result["duration_hrs"], refined_period)
+        radius_ratio = np.sqrt(bls_result["depth"]) if bls_result["depth"] > 0 else 0
     except Exception as e:
         refined_period = bls_result["period"]
         period_err     = 0.0
-        depth_result   = {"depth_ppm": bls_result["depth"]*1e6, "depth_err_ppm": 0,
-                          "duration_hrs": bls_result["duration"]*24, "fit_quality": "fallback"}
-        duration_val   = {"flag": "UNKNOWN", "interpretation": "Fitting unavailable"}
+        depth_result   = {
+            "depth_ppm":     bls_result["depth"] * 1e6,
+            "depth_err_ppm": 0.0,
+            "duration_hrs":  bls_result["duration"] * 24,
+            "fit_quality":   "fallback"
+        }
+        duration_val = {"flag": "UNKNOWN", "interpretation": "Fitting unavailable"}
+        radius_ratio = np.sqrt(bls_result["depth"]) if bls_result["depth"] > 0 else 0
 
-    radius_ratio = np.sqrt(bls_result["depth"]) if bls_result["depth"] > 0 else 0
-    figure_path  = None
-
+    figure_path = None
     if save_outputs:
         try:
             flux_norm   = flux / np.median(flux)
-            figure_path = plot_full_report(time, flux_norm, cleaned, bls_result,
-                                           classification, tic_id, save_path="backend/outputs")
+            figure_path = plot_full_report(
+                time, flux_norm, cleaned,
+                bls_result, classification,
+                tic_id, save_path="outputs"
+            )
         except Exception as e:
             logger.error(f"Visualization failed: {e}")
 
     result = {
         "tic_id":         tic_id,
         "classification": classification["label"],
-        "confidence":     classification["confidence"],
+        "confidence":     round(classification["confidence"], 2),
         "probabilities":  classification["probabilities"],
         "parameters": {
-            "period_days":      round(refined_period, 5),
-            "depth_ppm":        round(depth_result["depth_ppm"], 2),
-            "duration_hrs":     round(depth_result["duration_hrs"], 3),
-            "snr":              round(bls_result["snr"], 2),
-            "scatter_ppm":      round(cleaned["scatter_ppm"], 2),
-            "radius_ratio":     round(float(radius_ratio), 5),
+            "period_days":     round(refined_period, 5),
+            "period_err_days": round(period_err, 6),
+            "depth_ppm":       round(depth_result["depth_ppm"], 2),
+            "depth_err_ppm":   round(depth_result["depth_err_ppm"], 2),
+            "duration_hrs":    round(depth_result["duration_hrs"], 3),
+            "snr":             round(bls_result["snr"], 2),
+            "scatter_ppm":     round(cleaned["scatter_ppm"], 2),
+            "radius_ratio":    round(float(radius_ratio), 5),
+            "fit_quality":     depth_result["fit_quality"]
         },
-        "quality":        quality,
-        "figure_path":    figure_path,
-        "elapsed_sec":    round(timer.time() - start, 2)
+        "quality": {
+            "confidence": quality["confidence"],
+            "score":      quality["score"],
+            "flags":      quality["flags"]
+        },
+        "duration_validation": {
+            "flag":           duration_val["flag"],
+            "interpretation": duration_val["interpretation"]
+        },
+        "figure_path":  figure_path,
+        "elapsed_sec":  round(timer.time() - start, 2)
     }
 
     if save_outputs:
-        os.makedirs("backend/outputs", exist_ok=True)
-        with open(f"backend/outputs/result_TIC{tic_id}.json", "w") as f:
+        os.makedirs("outputs", exist_ok=True)
+        with open(f"outputs/result_TIC{tic_id}.json", "w") as f:
             json.dump(result, f, indent=2, default=str)
 
     return result
@@ -123,22 +148,23 @@ def print_summary(results):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PlanetX — Exoplanet Detection Pipeline")
     group  = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--tic",     type=int)
-    group.add_argument("--ticlist", type=str)
-    group.add_argument("--demo",    action="store_true")
+    group.add_argument("--tic",     type=int,  help="Single TIC ID")
+    group.add_argument("--ticlist", type=str,  help="Path to text file with TIC IDs")
+    group.add_argument("--demo",    action="store_true", help="Run on 3 known stars")
     parser.add_argument("--limit",  type=int, default=20)
     args = parser.parse_args()
 
     train_classifier()
 
     if args.demo:
-        tics = [25155310, 207141131, 318937509]
+        tics    = [25155310, 207141131, 318937509]
         results = [run_pipeline(t) for t in tics]
         print_summary(results)
 
     elif args.tic:
         result = run_pipeline(args.tic)
-        if result: print_summary([result])
+        if result:
+            print_summary([result])
 
     elif args.ticlist:
         with open(args.ticlist) as f:
