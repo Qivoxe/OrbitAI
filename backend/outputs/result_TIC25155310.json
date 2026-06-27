@@ -1,0 +1,35 @@
+{
+  "tic_id": 25155310,
+  "classification": "PLANET CANDIDATE",
+  "confidence": 39.49,
+  "probabilities": {
+    "PLANET CANDIDATE": 39.5,
+    "ECLIPSING BINARY": 21.1,
+    "BLEND": 32.6,
+    "NOISE / OTHER": 6.8
+  },
+  "parameters": {
+    "period_days": 3.23793,
+    "period_err_days": 0.039577,
+    "depth_ppm": 441.61,
+    "depth_err_ppm": 226.5,
+    "duration_hrs": 0.913,
+    "snr": 120.18,
+    "scatter_ppm": "1325.79",
+    "radius_ratio": 0.03434,
+    "n_points": 18260,
+    "fit_quality": "good"
+  },
+  "quality": {
+    "confidence": "HIGH",
+    "score": 80,
+    "flags": [
+      "Unusual duration: 0.8h"
+    ]
+  },
+  "duration_validation": {
+    "flag": "SLIGHTLY_SHORT",
+    "interpretation": "Shorter than expected \u2014 high impact parameter"
+  },
+  "figure_url": "/outputs/orbitai_TIC25155310.png"
+}
