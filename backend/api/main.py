@@ -2,11 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+import numpy as np
+import json as _json
 import sys
 import os
 import json
 import glob
-import numpy as np
 import logging
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -39,6 +40,12 @@ app.add_middleware(
 
 os.makedirs("outputs", exist_ok=True)
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+
+def convert_numpy(obj):
+    if isinstance(obj, np.integer):  return int(obj)
+    if isinstance(obj, np.floating): return float(obj)
+    if isinstance(obj, np.ndarray):  return obj.tolist()
+    return obj
 
 
 class TICRequest(BaseModel):
@@ -164,7 +171,7 @@ def analyze(req: TICRequest):
     with open(f"outputs/result_TIC{req.tic_id}.json", "w") as f:
         json.dump(result, f, indent=2, default=str)
 
-    return result
+    return _json.loads(_json.dumps(result, default=convert_numpy))
 
 
 @app.get("/result/{tic_id}")
