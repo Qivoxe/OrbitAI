@@ -311,7 +311,7 @@ Built for ISRO × Hack2Skill Hackathon — Problem Statement #07
 |------|------|
 | Shivam | Backend / ML Pipeline |
 | Nancy | Frontend / UI |
-| [Team Member 3] | Research / Report |
+| Utkarsh Singh | Research / Report |
 
 **GitHub:** https://github.com/Qivoxe/PlanetX
 
